@@ -1,0 +1,4 @@
+*.pyc
+*.crypt
+envs.json
+venv/
