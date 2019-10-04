@@ -6,6 +6,7 @@ import json
 import time
 import datetime
 import subprocess
+import traceback
 from optparse import OptionParser
 
 import paho.mqtt.client as mqtt
@@ -21,9 +22,10 @@ def parse_args(all_args):
 
 
 class BaseMessenger(object):
-    def __init__(self):
+    def __init__(self, path):
         # self.conn = self.get_conn()
         self.connected = False
+        self.creds = self.get_creds(path)
         return
 
     def get_conn(self, broker_addr):
@@ -33,7 +35,8 @@ class BaseMessenger(object):
             client = mqtt.Client()
             client.on_connect = self.on_connect 
             client.on_message = self.on_message
-            #client.username_pw_set(user, password=password
+            if len(self.creds['PASS']):
+                client.username_pw_set(self.creds['USER'], password=self.creds['PASS'])
             client.connect(broker_addr, keepalive=60)
             self.connected = True
         except:
@@ -59,8 +62,8 @@ class BaseMessenger(object):
     def close_conn(self, client):
         client.disconnect()
 
-    def talk(self, topic, msg):
-        self.send_message(self.client, topic, msg)
+    def talk(self, client, topic, msg):
+        self.send_message(client, topic, msg)
 
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
@@ -90,13 +93,13 @@ class BaseMessenger(object):
 
 if __name__ == '__main__':
     options, args = parse_args(sys.argv[1:])
-    my_msgr = BaseMessenger()
-    my_conn = my_msgr.get_conn('192.168.0.3')
+    my_msgr = BaseMessenger('/home/james/scripts/bites/envs.crypt')
+    my_conn = my_msgr.get_conn(my_msgr.creds['SERVER'])
     if options.listen:
-        my_msgr.listen(my_conn, 'hello')
+        my_msgr.listen(my_conn, 'test_topic')
     else:
         # print(' [->] sending: {}'.format('hello'))
-        my_msgr.send_message(my_conn, 'hello', 'Base at {}'.format(datetime.datetime.now().strftime('%Y%m%d_%H%M%S')))
+        my_msgr.send_message(my_conn, 'test_topic', 'Base at {}'.format(datetime.datetime.now().strftime('%Y%m%d_%H%M%S')))
     my_msgr.close_conn(my_conn)
 
 
